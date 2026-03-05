@@ -1,0 +1,27 @@
+[
+  {
+    "name": "Sercan",
+    "age": 31,
+    "email": "sercan@example.com"
+  },
+  {
+    "name": "Rıdvan",
+    "age": 31,
+    "email": "ridvan@example.com"
+  },
+  {
+    "name": "Mehmet",
+    "age": 31,
+    "email": "mehmet@example.com"
+  },
+  {
+    "name": "Ali",
+    "age": 31,
+    "email": "ali@example.com"
+  },
+  {
+    "name": "Ayşe",
+    "age": 31,
+    "email": "ayse@example.com"
+  }
+]
