@@ -39,6 +39,10 @@ func UsersHandler(w http.ResponseWriter, r *http.Request) {
 		createUser(w, r)
 		return
 	}
+	if r.Method == http.MethodDelete {
+		deleteUser(w, r)
+		return
+	}
 	http.Error(w, "Sadece GET ve POST methodları desteklenmektedir.", http.StatusMethodNotAllowed)
 
 }
@@ -182,8 +186,71 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	}
 	json.NewEncoder(w).Encode(response)
 }
+func deleteUser(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Body okunamadı", http.StatusBadRequest)
+		return
+	}
+	var deleteUserRequest DeleteUserRequest
+	err = json.Unmarshal(body, &deleteUserRequest)
+	if err != nil {
+		http.Error(w, "Geçersiz JSON formatı", http.StatusBadRequest)
+		return
+	}
+	if deleteUserRequest.Name == "" {
+		http.Error(w, "İsim zorunlu", http.StatusBadRequest)
+		return
+	}
+
+	// users.json dosyasını oku; yoksa oluştur
+
+	fileName := "users.json"
+
+	var users []User
+	if _, err := os.Stat(fileName); os.IsNotExist(err) {
+		users = []User{}
+		emptyFile, _ := json.MarshalIndent(users, "", " ")
+		os.WriteFile(fileName, emptyFile, 0644)
+	} else {
+		fileData, _ := os.ReadFile(fileName)
+		json.Unmarshal(fileData, &users)
+	}
+
+	// Silinecek kullanıcıyı bul
+	for i, user := range users {
+		if user.Name == deleteUserRequest.Name {
+			users = append(users[:i], users[i+1:]...)
+			break
+		}
+	}
+	// Güncellenmiş kullanıcı listesini JSON'a çevir
+	fileJson, err := json.MarshalIndent(users, "", "  ")
+	if err != nil {
+		http.Error(w, "JSON oluşturulamadı", http.StatusInternalServerError)
+		return
+	}
+	os.WriteFile(fileName, fileJson, 0644)
+
+	response := DeleteUserResponse{
+		Message: "Kullanıcı silindi..",
+		Name:    deleteUserRequest.Name,
+	}
+	json.NewEncoder(w).Encode(response)
+
+}
 
 type CreateUserResponse struct {
 	Message string `json:"message"`
 	User    User   `json:"user"`
+}
+type DeleteUserResponse struct {
+	Message string `json:"message"`
+	Name    string `json:"name"`
+}
+
+type DeleteUserRequest struct {
+	Name string `json:"name"`
 }

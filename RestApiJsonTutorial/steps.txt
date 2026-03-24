@@ -1,0 +1,159 @@
+0) Genel iskelet (her endpoint için ortak mantık)
+
+İstek hangi method ile geldi? (GET/POST/PUT/PATCH/DELETE)
+
+Response formatını belirle (JSON döneceksen Content-Type: application/json)
+
+Gerekli ise body oku → JSON parse et → validasyon yap
+
+Veri kaynağın users.json ise:
+
+Dosya yoksa oluştur (boş liste)
+
+Dosya varsa oku → JSON’u users listesine çevir
+
+İstenen işlemi users listesi üzerinde yap
+
+Gerekliyse users listesini tekrar JSON’a çevirip dosyaya yaz
+
+Sonuç olarak response JSON döndür (message + ilgili data)
+
+1) GET /users (Listeleme)
+
+Amaç: Dosyadan tüm kullanıcıları okuyup geri döndürmek.
+
+Response JSON olacak.
+
+users.json var mı kontrol et:
+
+Yoksa: boş users listesi oluştur, dosyayı buna göre yaz (opsiyonel ama güzel), sonra boş liste döndür.
+
+Varsa: dosyayı oku.
+
+Dosyadan gelen JSON’u users listesine çevir (unmarshal).
+
+users listesini response olarak JSON encode edip döndür.
+
+Mantık: “Kaynak dosya = database” gibi. GET sadece okur, değiştirmez (dosya yoksa oluşturma opsiyonel).
+
+2) POST /users (Yeni kullanıcı ekleme)
+
+Amaç: Body’den gelen kullanıcıyı listeye eklemek.
+
+Response JSON olacak.
+
+Request body’yi oku.
+
+Body JSON’unu User nesnesine çevir (unmarshal).
+
+Validasyon yap:
+
+name boş mu?
+
+email boş mu?
+
+age <= 0 mı?
+
+users.json var mı kontrol et:
+
+Yoksa: users = boş liste oluştur (dosyayı da oluşturabilirsin).
+
+Varsa: dosyayı oku → JSON’u users listesine çevir.
+
+newUser’ı users listesine append et.
+
+Güncel users listesini JSON’a çevir (marshal) ve dosyaya yaz.
+
+Response olarak “kullanıcı kaydedildi” + kaydedilen user’ı döndür.
+
+Mantık: POST “ekler”, bu yüzden dosyayı mutlaka güncellersin.
+
+3) DELETE /users (Silme)
+
+Amaç: Body’den gelen kritere göre listeden kullanıcıyı çıkarıp dosyayı güncellemek.
+
+Response JSON olacak.
+
+Request body’yi oku.
+
+Body JSON’unu DeleteUserRequest gibi bir nesneye çevir (unmarshal).
+
+Validasyon yap (ör: name zorunlu).
+
+users.json var mı kontrol et:
+
+Yoksa: aslında silinecek bir şey yok → boş liste var gibi davranabilir veya “bulunamadı” dönebilirsin.
+
+Varsa: oku → JSON’u users listesine çevir.
+
+users listesinde silmek istediğin kullanıcıyı ara:
+
+Bulunca: listeden çıkar (mantık: “önceki + sonraki parçaları birleştir”).
+
+Bulamazsan: “kullanıcı bulunamadı” gibi bir mesaj döndürmek daha doğru (istersen).
+
+Güncel listeyi JSON’a çevir → dosyaya yaz.
+
+Response dön: “silindi” + hangi isim silindi (veya bulunamadı mesajı).
+
+Mantık: DELETE “bul → çıkar → kalanı kaydet”.
+
+4) PUT /users (Tam güncelleme) — sıradaki adımın bu olsun
+
+PUT = “Bu kullanıcı artık tamamen böyle” demek. Eksik alan kabul etmezsin.
+
+Response JSON olacak.
+
+Body oku.
+
+Body JSON’u UpdateUserRequest/User nesnesine çevir.
+
+Validasyon:
+
+Hangi kullanıcı güncellenecek? (name/id gibi bir anahtar şart)
+
+Yeni değerlerin hepsi geçerli mi? (PUT’ta genelde tüm alanlar zorunlu)
+
+Dosya yoksa: “güncellenecek kullanıcı yok” de.
+
+Dosyayı oku → users listesine çevir.
+
+Listede hedef kullanıcıyı bul:
+
+Bulursan: o index’teki elemanı yeni user ile değiştir.
+
+Bulamazsan: “bulunamadı”.
+
+Listeyi dosyaya yaz.
+
+Response dön: “güncellendi” + güncel user.
+
+5) PATCH /users (Kısmi güncelleme)
+
+PATCH = “Sadece gönderdiğim alanları değiştir” demek. Eksik alanlar sorun değil.
+
+Body oku → JSON’u “kısmi update request”e çevir.
+
+Validasyon:
+
+Hedef kullanıcı anahtarı şart (name/id).
+
+Dosyayı oku → users listesine çevir.
+
+Hedef kullanıcıyı bul.
+
+Gönderilen alanlar doluysa/varsa sadece onları mevcut user üstüne uygula.
+
+Dosyaya yaz.
+
+Response dön.
+
+6) Bonus: En temel “doğruluk” kontrolleri (kod yazarken aklında olsun)
+
+JSON parse hatasında: “Geçersiz JSON”
+
+Dosya okuma/yazma hatasında: “Server error”
+
+Silme/güncellemede hedef yoksa: “Bulunamadı” (404 gibi düşün)
+
+Aynı isimle ikinci kez kayıt (istersen): “Zaten var” kontrolü ekleyebilirsin
